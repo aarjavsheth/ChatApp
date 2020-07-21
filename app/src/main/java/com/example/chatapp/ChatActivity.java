@@ -36,9 +36,8 @@ public class ChatActivity extends AppCompatActivity implements TextWatcher {
     private WebSocket webSocket;
     private String SERVER_PATH = "ws://your.ip.address:portnumber";
     private EditText messageEdit;
-    private View sendBtn, pickImgBtn;
+    private View sendBtn;
     private RecyclerView recyclerView;
-    private int IMAGE_REQUEST_ID = 11;
     private MessageAdapter messageAdapter;
 
     @Override
@@ -76,7 +75,6 @@ public class ChatActivity extends AppCompatActivity implements TextWatcher {
         }
         else {
             sendBtn.setVisibility(View.VISIBLE);
-            pickImgBtn.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -84,8 +82,7 @@ public class ChatActivity extends AppCompatActivity implements TextWatcher {
         messageEdit.removeTextChangedListener(this);
         messageEdit.setText("");
 
-        sendBtn.setVisibility(View.INVISIBLE);
-        pickImgBtn.setVisibility(View.VISIBLE);
+        sendBtn.setVisibility(View.VISIBLE);
 
         messageEdit.addTextChangedListener(this);
     }
@@ -125,7 +122,6 @@ public class ChatActivity extends AppCompatActivity implements TextWatcher {
     private void initializeView() {
         messageEdit = findViewById(R.id.messageEdit);
         sendBtn = findViewById(R.id.sendBtn);
-        pickImgBtn = findViewById(R.id.pickImageButton);
         recyclerView = findViewById(R.id.recyclerView);
 
         messageAdapter = new MessageAdapter(getLayoutInflater());
@@ -150,55 +146,11 @@ public class ChatActivity extends AppCompatActivity implements TextWatcher {
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-
-        });
-
-        pickImgBtn.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-            intent.setType("image/*");
-
-            startActivityForResult(Intent.createChooser(intent, "Pick Image"),
-                    IMAGE_REQUEST_ID);
         });
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
-        if(requestCode == IMAGE_REQUEST_ID && resultCode == RESULT_OK) {
-            try {
-                InputStream is = getContentResolver().openInputStream(data.getData());
-                Bitmap image = BitmapFactory.decodeStream(is);
-
-                sendImage(image);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private void sendImage(Bitmap image) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        image.compress(Bitmap.CompressFormat.JPEG, 50, outputStream);
-
-        String base64String = Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT);
-
-        JSONObject jsonObject = new JSONObject();
-
-        try {
-            jsonObject.put("name", name);
-            jsonObject.put("image", base64String);
-
-            webSocket.send(jsonObject.toString());
-            jsonObject.put("isSent", true);
-
-            messageAdapter.addItem(jsonObject);
-
-            recyclerView.smoothScrollToPosition(messageAdapter.getItemCount() - 1);
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
     }
 }
